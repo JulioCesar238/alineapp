@@ -1,95 +1,157 @@
+# alinea_app.py
 import streamlit as st
+from datetime import datetime
 
-# --------------------------------------------
-# Función auxiliar para mostrar descripción y campo de texto
-# --------------------------------------------
+# ===== FUNCIONES DE APOYO PARA EVALUACIÓN =====
+def evaluar_componente(nombre, texto, formula):
+    retro = f"\n**{nombre}**\n"
+    if not texto.strip():
+        return ""
 
-def input_section(title, description, fields):
-    st.markdown(f"### {title}")
-    st.markdown(description)
-    data = {}
-    for field in fields:
-        data[field] = st.text_area(f"📝 {field}")
-    st.markdown("---")
-    return data
+    errores = []
+    texto_lower = texto.lower()
 
-# --------------------------------------------
-# Interfaz principal de la App
-# --------------------------------------------
+    if not any(texto_lower.startswith(v) for v in formula['verbos']):
+        errores.append("- El verbo no corresponde al nivel jerárquico esperado.")
 
-st.title("🧩 ALINEA - Aplicación para Alinear Componentes Estratégicos")
-st.markdown("**Desarrollado por:** Montoya, Julio Cesar (2015). Universidad Nacional Abierta y a Distancia - UNAD.")
-st.markdown("---")
+    if not any(p in texto_lower for p in formula['indicadores']):
+        errores.append("- No se encontró un indicador o medida.")
 
-org_name = st.text_input("🏢 Nombre de la organización:")
+    if not any(t in texto_lower for t in formula['tiempos']):
+        errores.append("- No se identifica un plazo o fecha.")
 
-principios = input_section("🧭 Principios y Valores",
-    "Ingrese los principios y valores fundamentales. Ejemplo: Transparencia, Compromiso, Innovación.",
-    ["Principio 1", "Principio 2", "Principio 3"])
-
-politicas = input_section("📜 Políticas",
-    "Ingrese las políticas institucionales clave que rigen la actuación de la organización.",
-    ["Política 1", "Política 2", "Política 3"])
-
-mision = input_section("🎯 Misión",
-    "Propósito fundamental de la organización. ¿Por qué existe?",
-    ["Misión"])
-
-vision = input_section("🔭 Visión",
-    "Situación futura deseada. ¿Hacia dónde se dirige la organización?",
-    ["Visión"])
-
-st.markdown("## 🧠 Plan Estratégico")
-st.markdown("A continuación, ingrese los objetivos, estrategias, tácticas y operativos siguiendo la estructura jerárquica y fórmulas definidas.")
-
-objetivos = []
-for i in range(1, 4):
-    objetivo = st.text_input(f"🎯 Objetivo Estratégico {i} (Verbo + Objeto + Medida + Fecha):")
-    estrategias = []
-    for j in range(1, 3):
-        estrategia = st.text_input(f"➡️ Estrategia {i}.{j} (Verbo + Método + Área + Plazo):")
-        tacticas = []
-        for k in range(1, 3):
-            tactica = st.text_input(f"🛠️ Táctica {i}.{j}.{k} (Verbo + Acción + Recursos + Cronograma):")
-            operativos = []
-            for l in range(1, 3):
-                operativo = st.text_input(f"🔧 Operativa {i}.{j}.{k}.{l} (Verbo + Tarea + Frecuencia [+ Responsable]):")
-                operativos.append(operativo)
-            tacticas.append((tactica, operativos))
-        estrategias.append((estrategia, tacticas))
-    objetivos.append((objetivo, estrategias))
-
-# --------------------------------------------
-# Realimentación básica automática
-# --------------------------------------------
-
-if st.button("✅ Generar realimentación"):
-    st.markdown("## 📋 Realimentación Automática")
-    if not org_name:
-        st.warning("⚠️ Debes ingresar el nombre de la organización.")
+    if errores:
+        retro += "\n".join(errores)
     else:
-        st.success(f"Organización: {org_name}")
-        for idx, (obj, ests) in enumerate(objetivos, 1):
-            if not obj:
-                st.warning(f"Objetivo Estratégico {idx} está vacío.")
-            elif not any(verb in obj.lower() for verb in ["incrementar", "aumentar", "reducir", "establecer", "crear"]):
-                st.info(f"🔍 Revisa el verbo del Objetivo Estratégico {idx}. Verbo sugerido: 'Incrementar', 'Reducir', 'Crear'.")
-            for jdx, (est, tacts) in enumerate(ests, 1):
-                if not est:
-                    st.warning(f"Estrategia {idx}.{jdx} está vacía.")
-                elif not any(verb in est.lower() for verb in ["desarrollar", "formular", "optimizar", "diseñar", "consolidar"]):
-                    st.info(f"🔍 Revisa el verbo de Estrategia {idx}.{jdx}. Verbos sugeridos: 'Desarrollar', 'Diseñar', 'Optimizar'.")
-                for kdx, (tac, opers) in enumerate(tacts, 1):
-                    if not tac:
-                        st.warning(f"Táctica {idx}.{jdx}.{kdx} está vacía.")
-                    elif not any(verb in tac.lower() for verb in ["implementar", "ejecutar", "aplicar"]):
-                        st.info(f"🔍 Verbo sugerido para Táctica {idx}.{jdx}.{kdx}: 'Implementar', 'Ejecutar', 'Aplicar'.")
-                    for ldx, op in enumerate(opers, 1):
-                        if not op:
-                            st.warning(f"Operativa {idx}.{jdx}.{kdx}.{ldx} está vacía.")
-                        elif not any(verb in op.lower() for verb in ["realizar", "monitorear", "gestionar", "controlar"]):
-                            st.info(f"🔍 Verbo sugerido para Operativa {idx}.{jdx}.{kdx}.{ldx}: 'Realizar', 'Monitorear', 'Controlar'.")
+        retro += "✅ El componente cumple con los elementos clave de su fórmula."
+    return retro
 
-        st.markdown("---")
-        st.markdown("**Referencia:** Montoya, Julio Cesar (2015). ALINEA - App para alinear componentes estratégicos. Universidad Nacional Abierta y a Distancia - UNAD.")
 
+def evaluar_jerarquia(objetivo, estrategia, tactica, operativa):
+    jerarquia = ""
+    if objetivo and estrategia and not estrategia.lower().startswith(('desarrollar', 'diseñar', 'implementar')):
+        jerarquia += "- La estrategia podría no estar alineada con el verbo esperado (por ejemplo: 'Desarrollar', 'Diseñar').\n"
+    if estrategia and tactica and not tactica.lower().startswith(('implementar', 'ejecutar', 'organizar')):
+        jerarquia += "- La táctica podría requerir un verbo más operativo como 'Implementar'.\n"
+    if tactica and operativa and not operativa.lower().startswith(('realizar', 'verificar', 'controlar', 'hacer')):
+        jerarquia += "- La acción operativa debe tener un verbo orientado a tareas específicas como 'Realizar', 'Verificar'.\n"
+
+    if not jerarquia:
+        return "✅ Existe coherencia jerárquica entre los componentes."
+    else:
+        return jerarquia
+
+# ===== FORMATO DE VERBOS Y COMPONENTES =====
+formulas = {
+    'Objetivo Estratégico': {
+        'verbos': ['incrementar', 'reducir', 'mejorar', 'aumentar', 'fortalecer'],
+        'indicadores': ['%', 'porcentaje', 'tasa', 'nivel', 'índice'],
+        'tiempos': ['2025', 'en', 'para']
+    },
+    'Estrategia': {
+        'verbos': ['desarrollar', 'diseñar', 'implementar', 'crear'],
+        'indicadores': ['campaña', 'programa', 'plan'],
+        'tiempos': ['2025', 'en', 'durante']
+    },
+    'Táctica': {
+        'verbos': ['implementar', 'ejecutar', 'organizar'],
+        'indicadores': ['presupuesto', 'recurso', 'plan'],
+        'tiempos': ['trimestre', 'mes', '2025']
+    },
+    'Operativa': {
+        'verbos': ['realizar', 'verificar', 'controlar', 'hacer'],
+        'indicadores': ['semanal', 'mensual', 'frecuencia'],
+        'tiempos': ['día', 'semana', 'mes']
+    }
+}
+
+# ===== INTERFAZ STREAMLIT =====
+st.set_page_config(page_title="ALINEA - App de Planeación Estratégica")
+st.title("📊 ALINEA - App para Alinear Componentes Estratégicos")
+
+nombre_org = st.text_input("Nombre de la organización")
+
+with st.expander("Principios y Valores"):
+    principio1 = st.text_input("Principio o valor 1")
+    principio2 = st.text_input("Principio o valor 2")
+    principio3 = st.text_input("Principio o valor 3")
+
+with st.expander("Políticas"):
+    politica1 = st.text_input("Política 1")
+    politica2 = st.text_input("Política 2")
+    politica3 = st.text_input("Política 3")
+
+mision = st.text_area("Misión")
+vision = st.text_area("Visión")
+
+# === Plan Estratégico ===
+st.subheader("🎯 Plan Estratégico")
+
+# Objetivo 1
+objetivo1 = st.text_area("Objetivo Estratégico 1")
+estrategia1_1 = st.text_area("Estrategia 1.1")
+tactica1_1_1 = st.text_area("Táctica 1.1.1")
+operativa1_1_1_1 = st.text_area("Operativa 1.1.1.1")
+operativa1_1_1_2 = st.text_area("Operativa 1.1.1.2")
+tactica1_1_2 = st.text_area("Táctica 1.1.2")
+operativa1_1_2_1 = st.text_area("Operativa 1.1.2.1")
+operativa1_1_2_2 = st.text_area("Operativa 1.1.2.2")
+
+# Objetivo 2
+objetivo2 = st.text_area("Objetivo Estratégico 2")
+estrategia2_1 = st.text_area("Estrategia 2.1")
+tactica2_1_1 = st.text_area("Táctica 2.1.1")
+operativa2_1_1_1 = st.text_area("Operativa 2.1.1.1")
+operativa2_1_1_2 = st.text_area("Operativa 2.1.1.2")
+tactica2_1_2 = st.text_area("Táctica 2.1.2")
+operativa2_1_2_1 = st.text_area("Operativa 2.1.2.1")
+operativa2_1_2_2 = st.text_area("Operativa 2.1.2.2")
+
+# Objetivo 3
+objetivo3 = st.text_area("Objetivo Estratégico 3")
+estrategia3_1 = st.text_area("Estrategia 3.1")
+tactica3_1_1 = st.text_area("Táctica 3.1.1")
+operativa3_1_1_1 = st.text_area("Operativa 3.1.1.1")
+operativa3_1_1_2 = st.text_area("Operativa 3.1.1.2")
+tactica3_1_2 = st.text_area("Táctica 3.1.2")
+operativa3_1_2_1 = st.text_area("Operativa 3.1.2.1")
+operativa3_1_2_2 = st.text_area("Operativa 3.1.2.2")
+
+# === Botón para generar retroalimentación ===
+if st.button("✅ Generar realimentación"):
+    st.subheader("📌 Realimentación")
+
+    # Objetivo 1
+    st.markdown(evaluar_componente("Objetivo Estratégico 1", objetivo1, formulas['Objetivo Estratégico']))
+    st.markdown(evaluar_componente("Estrategia 1.1", estrategia1_1, formulas['Estrategia']))
+    st.markdown(evaluar_jerarquia(objetivo1, estrategia1_1, tactica1_1_1, operativa1_1_1_1))
+    st.markdown(evaluar_componente("Táctica 1.1.1", tactica1_1_1, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 1.1.1.1", operativa1_1_1_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 1.1.1.2", operativa1_1_1_2, formulas['Operativa']))
+    st.markdown(evaluar_componente("Táctica 1.1.2", tactica1_1_2, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 1.1.2.1", operativa1_1_2_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 1.1.2.2", operativa1_1_2_2, formulas['Operativa']))
+
+    # Objetivo 2
+    st.markdown(evaluar_componente("Objetivo Estratégico 2", objetivo2, formulas['Objetivo Estratégico']))
+    st.markdown(evaluar_componente("Estrategia 2.1", estrategia2_1, formulas['Estrategia']))
+    st.markdown(evaluar_jerarquia(objetivo2, estrategia2_1, tactica2_1_1, operativa2_1_1_1))
+    st.markdown(evaluar_componente("Táctica 2.1.1", tactica2_1_1, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 2.1.1.1", operativa2_1_1_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 2.1.1.2", operativa2_1_1_2, formulas['Operativa']))
+    st.markdown(evaluar_componente("Táctica 2.1.2", tactica2_1_2, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 2.1.2.1", operativa2_1_2_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 2.1.2.2", operativa2_1_2_2, formulas['Operativa']))
+
+    # Objetivo 3
+    st.markdown(evaluar_componente("Objetivo Estratégico 3", objetivo3, formulas['Objetivo Estratégico']))
+    st.markdown(evaluar_componente("Estrategia 3.1", estrategia3_1, formulas['Estrategia']))
+    st.markdown(evaluar_jerarquia(objetivo3, estrategia3_1, tactica3_1_1, operativa3_1_1_1))
+    st.markdown(evaluar_componente("Táctica 3.1.1", tactica3_1_1, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 3.1.1.1", operativa3_1_1_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 3.1.1.2", operativa3_1_1_2, formulas['Operativa']))
+    st.markdown(evaluar_componente("Táctica 3.1.2", tactica3_1_2, formulas['Táctica']))
+    st.markdown(evaluar_componente("Operativa 3.1.2.1", operativa3_1_2_1, formulas['Operativa']))
+    st.markdown(evaluar_componente("Operativa 3.1.2.2", operativa3_1_2_2, formulas['Operativa']))
+
+    st.markdown("\n---\n**Referencia:** Montoya, Julio César (2025) ALINEA - App para alinear componentes estratégicos. Universidad Nacional Abierta y a Distancia - UNAD.")
